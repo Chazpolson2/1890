@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flip Clock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--fs:120px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:transparent}
+body{display:flex;align-items:center;justify-content:center;font-family:'Oswald',Impact,sans-serif;-webkit-font-smoothing:antialiased}
+.clock{display:flex;gap:.2em;font-size:var(--fs)}
+.cards{display:flex;gap:.06em}
+.card{position:relative;width:.74em;height:1.08em;perspective:4em;border-radius:.08em;box-shadow:0 .04em .1em rgba(0,0,0,.45)}
+.half,.flap{position:absolute;left:0;right:0;height:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.top{top:0;border-radius:.08em .08em 0 0;background:#1c1c1c}
+.bottom{bottom:0;border-radius:0 0 .08em .08em;background:#161616}
+.half span,.flap span{position:absolute;left:0;right:0;height:1.08em;line-height:1.08em;text-align:center;font-weight:500;color:#fff}
+.top span{top:0}.bottom span{top:-.54em}
+.flap{display:none;z-index:3}
+.flap.top{transform-origin:50% 100%}
+.flap.bottom{transform-origin:50% 0;transform:rotateX(90deg)}
+.card.flip .flap{display:block}
+.card.flip .flap.top{animation:ft .3s ease-in forwards}
+.card.flip .flap.bottom{animation:fb .3s .3s ease-out forwards}
+@keyframes ft{from{transform:rotateX(0)}to{transform:rotateX(-90deg);filter:brightness(.6)}}
+@keyframes fb{from{transform:rotateX(90deg);filter:brightness(1.5)}to{transform:rotateX(0)}}
+.card::after{content:'';position:absolute;left:0;right:0;top:calc(50% - .006em);height:.012em;background:#000;z-index:4}
+</style>
+</head>
+<body>
+<div class="clock" id="clock"></div>
+<script>
+(function(){
+// 12-hour by default; add ?24h to the URL for 24-hour time
+const H24=new URLSearchParams(location.search).has('24h');
+const clock=document.getElementById('clock');
+
+function makeCard(){
+  const c=document.createElement('div');c.className='card';
+  c.innerHTML='<div class="half top"><span></span></div><div class="half bottom"><span></span></div><div class="flap top"><span></span></div><div class="flap bottom"><span></span></div>';
+  c._s=c.querySelectorAll('span');c._v=null;
+  c.querySelector('.flap.bottom').addEventListener('animationend',()=>{c._s[1].textContent=c._v;c.classList.remove('flip');});
+  return c;
+}
+function setCard(c,v){
+  if(c._v===v) return;
+  const old=c._v;c._v=v;
+  if(old===null){c._s.forEach(s=>s.textContent=v);return;}
+  const [top,bot,ftop,fbot]=c._s;
+  top.textContent=v;bot.textContent=old;ftop.textContent=old;fbot.textContent=v;
+  c.classList.remove('flip');void c.offsetWidth;c.classList.add('flip');
+}
+
+const cards=[];
+for(let g=0;g<2;g++){
+  const grp=document.createElement('div');grp.className='cards';
+  for(let i=0;i<2;i++){const c=makeCard();grp.appendChild(c);cards.push(c);}
+  clock.appendChild(grp);
+}
+
+function fit(){
+  const wEm=4*.74+2*.06+.2;
+  const fs=Math.max(20,Math.min((innerWidth-16)/wEm,(innerHeight-16)/1.12));
+  document.documentElement.style.setProperty('--fs',fs+'px');
+}
+addEventListener('resize',fit);fit();
+
+function tick(){
+  const d=new Date();let h=d.getHours();
+  if(!H24){h=h%12||12;}
+  const str=String(h).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');
+  cards.forEach((c,i)=>setCard(c,str[i]));
+}
+tick();setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>
